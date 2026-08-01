@@ -45,7 +45,11 @@ function startContinuousRain() {
   }, 150);
 }
 
-function dodgeButton(button) {
+function rectsOverlap(a, b) {
+  return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+}
+
+function dodgeButton(button, avoidElements) {
   const margin = 16;
   const width = button.offsetWidth;
   const height = button.offsetHeight;
@@ -60,11 +64,26 @@ function dodgeButton(button) {
     document.body.appendChild(button);
   }
 
+  const avoidRects = (avoidElements || []).map((el) => el.getBoundingClientRect());
+
   const maxLeft = Math.max(margin, document.documentElement.clientWidth - width - margin);
   const maxTop = Math.max(margin, document.documentElement.clientHeight - height - margin);
 
-  const randomLeft = margin + Math.random() * (maxLeft - margin);
-  const randomTop = margin + Math.random() * (maxTop - margin);
+  let randomLeft = margin;
+  let randomTop = margin;
+  let attempts = 0;
+
+  do {
+    randomLeft = margin + Math.random() * (maxLeft - margin);
+    randomTop = margin + Math.random() * (maxTop - margin);
+    attempts += 1;
+  } while (
+    attempts < 30 &&
+    avoidRects.some((rect) => rectsOverlap(
+      { left: randomLeft, right: randomLeft + width, top: randomTop, bottom: randomTop + height },
+      rect
+    ))
+  );
 
   button.classList.add('jumping');
   button.style.width = width + 'px';
@@ -73,11 +92,18 @@ function dodgeButton(button) {
   button.style.top = randomTop + 'px';
 }
 
-function setupChaseButton(button, buttonA) {
+function setupChaseButton(button, buttonA, avoidElements) {
   let armed = false;
 
-  button.addEventListener('mouseenter', () => dodgeButton(button));
-  button.addEventListener('touchstart', () => dodgeButton(button), { passive: true });
+  button.addEventListener('mouseenter', () => {
+    if (armed) return;
+    dodgeButton(button, avoidElements);
+  });
+
+  button.addEventListener('touchstart', () => {
+    if (armed) return;
+    dodgeButton(button, avoidElements);
+  }, { passive: true });
 
   button.addEventListener('click', () => {
     if (!armed) {
@@ -182,6 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  setupChaseButton(buttonB, buttonA);
+  setupChaseButton(buttonB, buttonA, [buttonA, buttonC]);
   setupMorphButton(buttonC, buttonA);
 });
