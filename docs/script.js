@@ -175,7 +175,7 @@ function setupTerminPage() {
     if (timeInput.value === '') return;
 
     submitButton.disabled = true;
-    submitButton.textContent = 'Wird gesendet...';
+    submitButton.textContent = 'submitting...Please wait a moment';
 
     sendTerminAnswer(timeInput.value).finally(() => {
       window.location.href = 'yes.html';
